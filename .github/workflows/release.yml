@@ -251,7 +251,7 @@ jobs:
 
       - name: Update rolling 'latest' release
         if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: latest
           name: "Comet — latest dev build"
@@ -289,7 +289,7 @@ jobs:
 
       - name: Create tagged GitHub Release with .dmg + appcast
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             ${{ steps.dmg.outputs.dmg_path }}
