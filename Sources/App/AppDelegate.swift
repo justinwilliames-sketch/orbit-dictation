@@ -20,7 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         didFinishLaunching = true
-        logger.info("Orbit Dictation launched from: \(Bundle.main.bundleURL.path, privacy: .public)")
+        logger.info("Comet launched from: \(Bundle.main.bundleURL.path, privacy: .public)")
 
         // App Translocation check first. macOS Gatekeeper silently copies an
         // unsigned + quarantined app to a randomised read-only path under
@@ -43,7 +43,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        logger.info("Orbit Dictation terminating")
+        logger.info("Comet terminating")
     }
 
     /// When the user clicks the .app (Finder, Dock, Spotlight, ⌘-tab) while
@@ -96,14 +96,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         logger.error("App Translocation detected — running from \(bundlePath, privacy: .public)")
 
-        let command = #"xattr -dr com.apple.quarantine "/Applications/Orbit Dictation.app""#
+        let command = #"xattr -dr com.apple.quarantine "/Applications/Comet.app""#
 
         let alert = NSAlert()
-        alert.messageText = "Orbit Dictation can't keep permissions yet"
+        alert.messageText = "Comet can't keep permissions yet"
         alert.informativeText = """
             macOS is running this build from a translocated location because the Gatekeeper quarantine flag is still attached. Any Microphone or Accessibility permission you grant in this state would be associated with a path that changes on every launch — so the grants won't persist.
 
-            Fix it once: quit Orbit Dictation, run this in Terminal, then relaunch from /Applications.
+            Fix it once: quit Comet, run this in Terminal, then relaunch from /Applications.
 
             \(command)
 
@@ -183,12 +183,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func showPostUpdateGatekeeperHelpDialog(previous: String, current: String) {
-        let command = #"xattr -dr com.apple.quarantine "/Applications/Orbit Dictation.app""#
+        let command = #"xattr -dr com.apple.quarantine "/Applications/Comet.app""#
 
         let alert = NSAlert()
-        alert.messageText = "Orbit Dictation updated to \(current)"
+        alert.messageText = "Comet updated to \(current)"
         alert.informativeText = """
-            macOS may quarantine the new build the first time it relaunches and refuse to open it (you'll see "Orbit Dictation can't be opened because Apple cannot check it for malicious software" or similar).
+            macOS may quarantine the new build the first time it relaunches and refuse to open it (you'll see "Comet can't be opened because Apple cannot check it for malicious software" or similar).
 
             Run this command in Terminal once to allow it through:
 

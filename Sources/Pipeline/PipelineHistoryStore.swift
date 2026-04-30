@@ -15,7 +15,7 @@ final class PipelineHistoryStore: ObservableObject {
         self.maxItems = maxItems
 
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dir = appSupport.appendingPathComponent("Orbit Dictation", isDirectory: true)
+        let dir = appSupport.appendingPathComponent("Comet", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         self.fileURL = dir.appendingPathComponent("history.json")
 

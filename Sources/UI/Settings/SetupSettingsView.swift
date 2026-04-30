@@ -19,7 +19,7 @@ struct SetupSettingsView: View {
 
     private var heroCard: some View {
         PreferenceCard(
-            "Orbit Dictation Setup",
+            "Comet Setup",
             detail: "Finish the core steps once, then dictation stays out of your way.",
             icon: "sparkles"
         ) {
@@ -28,7 +28,7 @@ struct SetupSettingsView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("\(appState.setupCompletedCount) of \(appState.setupItemCount) complete")
                             .font(.title2.weight(.semibold))
-                        Text(appState.isReadyForDailyUse ? "Orbit Dictation is ready to dictate across your Mac." : "A few items still need attention before daily use feels seamless.")
+                        Text(appState.isReadyForDailyUse ? "Comet is ready to dictate across your Mac." : "A few items still need attention before daily use feels seamless.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -61,7 +61,7 @@ struct SetupSettingsView: View {
             VStack(spacing: 10) {
                 SetupChecklistRow(
                     title: "Grant microphone access",
-                    detail: "Orbit Dictation needs live audio input before it can capture speech.",
+                    detail: "Comet needs live audio input before it can capture speech.",
                     isComplete: appState.microphoneAccessGranted,
                     actionTitle: appState.microphoneAccessGranted ? nil : "Allow",
                     action: appState.microphoneAccessGranted ? nil : { appState.requestMicrophoneAccess() }
@@ -69,7 +69,7 @@ struct SetupSettingsView: View {
 
                 SetupChecklistRow(
                     title: "Enable accessibility access",
-                    detail: "This lets Orbit Dictation trigger shortcuts globally and paste text back into the active app. After granting in System Settings, use the Recheck button on the General tab if this row still says incomplete.",
+                    detail: "This lets Comet trigger shortcuts globally and paste text back into the active app. After granting in System Settings, use the Recheck button on the General tab if this row still says incomplete.",
                     isComplete: appState.hotkeyManager.isAccessibilityGranted,
                     actionTitle: appState.hotkeyManager.isAccessibilityGranted ? nil : "Open",
                     action: appState.hotkeyManager.isAccessibilityGranted ? nil : { appState.requestAccessibilityAccess() }
@@ -109,11 +109,11 @@ struct SetupSettingsView: View {
     private var quickStartCard: some View {
         PreferenceCard(
             "How It Works",
-            detail: "Orbit Dictation keeps capture, cleanup, and paste in a single pass.",
+            detail: "Comet keeps capture, cleanup, and paste in a single pass.",
             icon: "waveform.and.mic"
         ) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Hold your shortcut to speak, or use the toggle shortcut when you want to stay in dictation mode. After you stop, Orbit Dictation transcribes, cleans up the wording, and pastes the final text back into the frontmost app.")
+                Text("Hold your shortcut to speak, or use the toggle shortcut when you want to stay in dictation mode. After you stop, Comet transcribes, cleans up the wording, and pastes the final text back into the frontmost app.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
@@ -141,9 +141,9 @@ struct SetupSettingsView: View {
                 DisclosureGroup("Accessibility doesn't take effect after granting") {
                     TroubleshootingSteps(steps: [
                         "Open System Settings → Privacy & Security → Accessibility.",
-                        "Find Orbit Dictation in the list and click the − button to remove it.",
-                        "Quit Orbit Dictation completely (right-click the menu-bar icon → Quit, or ⌘Q from the popover).",
-                        "Relaunch Orbit Dictation.",
+                        "Find Comet in the list and click the − button to remove it.",
+                        "Quit Comet completely (right-click the menu-bar icon → Quit, or ⌘Q from the popover).",
+                        "Relaunch Comet.",
                         "Click Grant Access in the in-app prompt — the new entry will be picked up immediately.",
                     ])
                     .padding(.top, 8)
@@ -160,12 +160,12 @@ struct SetupSettingsView: View {
 
                 DisclosureGroup("Gatekeeper blocks the app after an update") {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Orbit Dictation shows a one-click \"Copy & Open Terminal\" helper after each update. If you missed it, run this in Terminal once:")
+                        Text("Comet shows a one-click \"Copy & Open Terminal\" helper after each update. If you missed it, run this in Terminal once:")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
 
-                        Text(#"xattr -dr com.apple.quarantine "/Applications/Orbit Dictation.app""#)
+                        Text(#"xattr -dr com.apple.quarantine "/Applications/Comet.app""#)
                             .font(.system(.caption, design: .monospaced))
                             .textSelection(.enabled)
                             .padding(10)
@@ -173,7 +173,7 @@ struct SetupSettingsView: View {
                             .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                         Button("Copy command") {
-                            let command = #"xattr -dr com.apple.quarantine "/Applications/Orbit Dictation.app""#
+                            let command = #"xattr -dr com.apple.quarantine "/Applications/Comet.app""#
                             NSPasteboard.general.clearContents()
                             NSPasteboard.general.setString(command, forType: .string)
                         }
@@ -186,7 +186,7 @@ struct SetupSettingsView: View {
                 DisclosureGroup("Microphone permission already granted but the app says \"Missing\"") {
                     TroubleshootingSteps(steps: [
                         "Open System Settings → Privacy & Security → Microphone.",
-                        "Toggle Orbit Dictation off, then back on.",
+                        "Toggle Comet off, then back on.",
                         "If that doesn't help, remove the entry with the − button and relaunch the app to re-prompt.",
                     ])
                     .padding(.top, 8)
@@ -199,7 +199,7 @@ struct SetupSettingsView: View {
 
                 DisclosureGroup("Still stuck? Nuclear reset (recommended last)") {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("If remove + re-add + toggle still doesn't pick up, the system permission database (tccd) has a cached entry pointing at a stale bundle. Wipe all permission grants for Orbit Dictation and start fresh:")
+                        Text("If remove + re-add + toggle still doesn't pick up, the system permission database (tccd) has a cached entry pointing at a stale bundle. Wipe all permission grants for Comet and start fresh:")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -229,7 +229,7 @@ struct SetupSettingsView: View {
                             Spacer()
                         }
 
-                        Text("After running the commands, quit Orbit Dictation completely (menu-bar icon → Quit), wait a few seconds, then relaunch from /Applications. Re-grant when prompted.")
+                        Text("After running the commands, quit Comet completely (menu-bar icon → Quit), wait a few seconds, then relaunch from /Applications. Re-grant when prompted.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -240,7 +240,7 @@ struct SetupSettingsView: View {
                 Divider()
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("After granting in System Settings, the running app must restart for AXIsProcessTrusted() to see the new state. Click below to relaunch Orbit Dictation in one step.")
+                    Text("After granting in System Settings, the running app must restart for AXIsProcessTrusted() to see the new state. Click below to relaunch Comet in one step.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -248,7 +248,7 @@ struct SetupSettingsView: View {
                     Button {
                         Self.relaunchApp()
                     } label: {
-                        Label("Restart Orbit Dictation", systemImage: "arrow.clockwise.circle")
+                        Label("Restart Comet", systemImage: "arrow.clockwise.circle")
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.regular)
@@ -269,7 +269,7 @@ struct SetupSettingsView: View {
                         .padding(8)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-                    Text("If this isn't /Applications/Orbit Dictation.app, your TCC grants are being recorded against the wrong path. Move the app, run the xattr command, and relaunch.")
+                    Text("If this isn't /Applications/Comet.app, your TCC grants are being recorded against the wrong path. Move the app, run the xattr command, and relaunch.")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -281,7 +281,7 @@ struct SetupSettingsView: View {
                     Text("Why this happens")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
-                    Text("Orbit Dictation currently ships unsigned (no Apple Developer Programme certificate yet). macOS keys permission grants — Accessibility, Microphone, Keychain access, and Gatekeeper approval — to the running binary's identity. Signed apps use the signing identity, which is stable across versions. Unsigned apps fall back to the binary hash, which changes on every Sparkle update. That's why grants need refreshing after updates, and why a running process must restart to pick up a fresh grant. Signing the app fixes all four issues above permanently.")
+                    Text("Comet currently ships unsigned (no Apple Developer Programme certificate yet). macOS keys permission grants — Accessibility, Microphone, Keychain access, and Gatekeeper approval — to the running binary's identity. Signed apps use the signing identity, which is stable across versions. Unsigned apps fall back to the binary hash, which changes on every Sparkle update. That's why grants need refreshing after updates, and why a running process must restart to pick up a fresh grant. Signing the app fixes all four issues above permanently.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)

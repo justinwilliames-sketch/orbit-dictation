@@ -45,7 +45,7 @@ enum STTLanguageSelection: Equatable {
 }
 
 enum STTLanguageCatalog {
-    /// Curated subset of languages broadly supported by Orbit Dictation's STT providers.
+    /// Curated subset of languages broadly supported by Comet's STT providers.
     static let all: [STTLanguage] = [
         .init(code: "en-US", displayName: "English (US)"),
         .init(code: "en-GB", displayName: "English (UK)"),

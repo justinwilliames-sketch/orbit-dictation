@@ -15,7 +15,7 @@ struct AboutView: View {
                 .shadow(color: .black.opacity(0.12), radius: 10, y: 6)
 
             VStack(spacing: 6) {
-                Text("Orbit Dictation")
+                Text("Comet")
                     .font(.title2.weight(.semibold))
 
                 Text("Menu-bar voice dictation for macOS")
@@ -28,7 +28,7 @@ struct AboutView: View {
             }
 
             VStack(spacing: 10) {
-                Text("Orbit Dictation captures speech, transcribes it, optionally cleans it up, and pastes the result back into your current app.")
+                Text("Comet captures speech, transcribes it, optionally cleans it up, and pastes the result back into your current app.")
                     .font(.callout)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)

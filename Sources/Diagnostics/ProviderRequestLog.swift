@@ -35,7 +35,7 @@ final class ProviderRequestLog: ObservableObject {
         self.maxItems = maxItems
 
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let directoryURL = appSupport.appendingPathComponent("Orbit Dictation", isDirectory: true)
+        let directoryURL = appSupport.appendingPathComponent("Comet", isDirectory: true)
         try? FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
         self.fileURL = directoryURL.appendingPathComponent("provider-requests.json")
 

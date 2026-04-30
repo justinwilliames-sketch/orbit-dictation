@@ -261,7 +261,7 @@ final class DictationPipeline: ObservableObject {
         case .restricted, .denied:
             presentError("Microphone access is unavailable. Enable it in System Settings > Privacy & Security > Microphone.")
         @unknown default:
-            presentError("Orbit Dictation could not determine microphone permissions.")
+            presentError("Comet could not determine microphone permissions.")
         }
     }
 

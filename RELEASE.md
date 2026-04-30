@@ -1,6 +1,6 @@
-# Release runbook — Orbit Dictation
+# Release runbook — Comet
 
-How to ship Orbit Dictation, and what to do if the Sparkle signing key is ever lost or compromised.
+How to ship Comet, and what to do if the Sparkle signing key is ever lost or compromised.
 
 ---
 
@@ -15,8 +15,8 @@ git push origin v0.X.Y
 CI (`.github/workflows/release.yml`):
 1. Skip-duplicate gate (avoids rebuilding tagged commits also pushed to `main`).
 2. Generates Xcode project via `xcodegen`.
-3. Builds an unsigned `Orbit Dictation.app`, then **replaces the linker-signed stamp with an explicit ad-hoc signature** (`codesign --force --deep --sign -`). This is the highest-trust signature macOS will treat as a stable identity for unsigned distribution; TCC honours it.
-4. Packages as `OrbitDictation-vX.Y.Z.dmg`.
+3. Builds an unsigned `Comet.app`, then **replaces the linker-signed stamp with an explicit ad-hoc signature** (`codesign --force --deep --sign -`). This is the highest-trust signature macOS will treat as a stable identity for unsigned distribution; TCC honours it.
+4. Packages as `Comet-vX.Y.Z.dmg`.
 5. Signs the `.dmg` with the Ed25519 Sparkle key (secret `SPARKLE_ED_PRIVATE_KEY`).
 6. Generates `appcast.xml`.
 7. Creates a tagged GitHub Release (non-prerelease) with both files attached.
@@ -48,7 +48,7 @@ Run this once per release cycle:
 
 1. Confirm GH Actions secret `SPARKLE_ED_PRIVATE_KEY` is set on the repo.
 2. Confirm the Keychain entry exists (`security find-generic-password -s 'Sparkle Sign Update' -a 'orbit-dictation'`) and matches.
-3. Confirm an encrypted offline backup exists in 1Password (account: `Orbit Dictation Sparkle Ed25519 private key`).
+3. Confirm an encrypted offline backup exists in 1Password (account: `Comet Sparkle Ed25519 private key`).
 
 The matching public key (from `Info.plist`'s `SUPublicEDKey`) should be derivable from any of the three private-key copies — Sparkle's `sign_update` tool prints the public key it would sign with, useful for cross-check.
 
@@ -59,7 +59,7 @@ GitHub does not allow reading a secret back. If the repo is deleted or the secre
 **Recommended belt-and-braces backup:**
 
 1. **Local Keychain entry** — already in place per the memory rule (`account: orbit-dictation`).
-2. **1Password vault entry** — secure note labelled `Orbit Dictation Sparkle Ed25519 private key` in a vault you control. Include the matching public key for cross-check.
+2. **1Password vault entry** — secure note labelled `Comet Sparkle Ed25519 private key` in a vault you control. Include the matching public key for cross-check.
 3. **Encrypted off-site archive** — encrypted APFS sparse bundle on a second machine or external drive.
 
 ### 3. If the key is lost — choose a path
@@ -90,7 +90,7 @@ A leaked private key means an attacker can sign their own `.dmg` and trick Spark
 
 ## Other ops notes
 
-- **Notarization is not configured.** The app ships ad-hoc-signed (no Apple Developer ID). Users must run `xattr -dr com.apple.quarantine "/Applications/Orbit Dictation.app"` after each install. Once the Developer ID is provisioned:
+- **Notarization is not configured.** The app ships ad-hoc-signed (no Apple Developer ID). Users must run `xattr -dr com.apple.quarantine "/Applications/Comet.app"` after each install. Once the Developer ID is provisioned:
   - Replace the ad-hoc `codesign --sign -` step with `codesign --sign "Developer ID Application: ..."`.
   - Add `xcrun notarytool submit` + `xcrun stapler staple` after `.dmg` creation.
   - Remove the ad-hoc-signing block — at that point macOS handles trust via notarization.

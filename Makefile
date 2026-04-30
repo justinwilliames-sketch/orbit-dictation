@@ -1,6 +1,6 @@
 SCHEME = Whispur
 PROJECT = Whispur.xcodeproj
-APP_NAME = Orbit Dictation
+APP_NAME = Comet
 BUILD_DIR = build
 CONFIGURATION = Release
 APP_PATH = $(BUILD_DIR)/Build/Products/$(CONFIGURATION)/$(APP_NAME).app

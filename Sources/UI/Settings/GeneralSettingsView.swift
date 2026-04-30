@@ -63,7 +63,7 @@ struct GeneralSettingsView: View {
     private var permissionsCard: some View {
         PreferenceCard(
             "Permissions",
-            detail: "Orbit Dictation can monitor setup changes while this window stays open.",
+            detail: "Comet can monitor setup changes while this window stays open.",
             icon: "lock.shield"
         ) {
             VStack(alignment: .leading, spacing: 14) {
@@ -135,7 +135,7 @@ struct GeneralSettingsView: View {
 
                 Divider()
 
-                DetailRow("Shortcut monitoring", detail: "Orbit Dictation keeps the global shortcut listener active in the background.") {
+                DetailRow("Shortcut monitoring", detail: "Comet keeps the global shortcut listener active in the background.") {
                     PreferenceBadge(
                         title: appState.hotkeyManager.isMonitoring ? "Active" : "Inactive",
                         tone: appState.hotkeyManager.isMonitoring ? .good : .critical
@@ -148,7 +148,7 @@ struct GeneralSettingsView: View {
     private var behaviorCard: some View {
         PreferenceCard(
             "Behavior",
-            detail: "Tune how Orbit Dictation handles output and feedback.",
+            detail: "Tune how Comet handles output and feedback.",
             icon: "slider.horizontal.3"
         ) {
             VStack(alignment: .leading, spacing: 12) {
@@ -166,7 +166,7 @@ struct GeneralSettingsView: View {
     private var aboutCard: some View {
         PreferenceCard(
             "About",
-            detail: "Orbit Dictation keeps the brand and workflow lightweight: speak, clean up, paste, move on.",
+            detail: "Comet keeps the brand and workflow lightweight: speak, clean up, paste, move on.",
             icon: "sparkles.rectangle.stack"
         ) {
             VStack(alignment: .leading, spacing: 12) {
@@ -187,7 +187,7 @@ struct GeneralSettingsView: View {
 
                 DetailRow(
                     "Automatic updates",
-                    detail: "Orbit Dictation polls for new releases in the background. Turn this off while you're testing — installs-on-quit can change the binary hash, which on unsigned builds invalidates Accessibility, Microphone, and Keychain grants you've already given."
+                    detail: "Comet polls for new releases in the background. Turn this off while you're testing — installs-on-quit can change the binary hash, which on unsigned builds invalidates Accessibility, Microphone, and Keychain grants you've already given."
                 ) {
                     Toggle("", isOn: Binding(
                         get: { appState.sparkleUpdater.automaticallyChecksForUpdates },

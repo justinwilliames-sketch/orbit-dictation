@@ -56,7 +56,7 @@ struct ProvidersSettingsView: View {
                     }
                 }
 
-                Text("Sign up at console.groq.com (no credit card needed), create an API key, paste it here. Orbit Dictation uses Groq's whisper-large-v3 for speech and Llama 3.3 70B for cleanup — Groq's free models, picked for you.")
+                Text("Sign up at console.groq.com (no credit card needed), create an API key, paste it here. Comet uses Groq's whisper-large-v3 for speech and Llama 3.3 70B for cleanup — Groq's free models, picked for you.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -92,7 +92,7 @@ struct ProvidersSettingsView: View {
     private var appleOnlyCard: some View {
         PreferenceCard(
             "Or just use Apple Dictation",
-            detail: "Apple's on-device speech recognition runs locally with zero API keys. The recording stays on your Mac and Orbit Dictation pastes the raw transcript with light punctuation only.",
+            detail: "Apple's on-device speech recognition runs locally with zero API keys. The recording stays on your Mac and Comet pastes the raw transcript with light punctuation only.",
             icon: "applelogo"
         ) {
             VStack(alignment: .leading, spacing: 12) {
@@ -145,7 +145,7 @@ struct ProvidersSettingsView: View {
             Text("Speech-to-Text")
                 .font(.subheadline.weight(.semibold))
 
-            Text("Pick which transcription service Orbit Dictation calls after recording.")
+            Text("Pick which transcription service Comet calls after recording.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -201,7 +201,7 @@ struct ProvidersSettingsView: View {
                 ProviderConfigurationCard(
                     name: provider.displayName,
                     note: appState.selectedLLM == provider && !appState.isSelectedLLMConfigured
-                        ? "Orbit Dictation will paste raw transcripts until credentials are added."
+                        ? "Comet will paste raw transcripts until credentials are added."
                         : "Use this provider for transcript cleanup after transcription.",
                     isActive: appState.selectedLLM == provider,
                     isConfigured: appState.keychain.hasKeysFor(llm: provider)
@@ -223,7 +223,7 @@ struct ProvidersSettingsView: View {
     private var languagesCard: some View {
         PreferenceCard(
             "Preferred Language",
-            detail: "Pick the language you speak. Orbit Dictation sends this as a hint to the selected speech provider. Auto-detect asks the provider to identify the language itself — best when you switch between languages.",
+            detail: "Pick the language you speak. Comet sends this as a hint to the selected speech provider. Auto-detect asks the provider to identify the language itself — best when you switch between languages.",
             icon: "character.bubble"
         ) {
             STTLanguagePicker(appState: appState)
@@ -278,11 +278,11 @@ private struct STTLanguagePicker: View {
         case (.deepgram, .auto):
             return "Deepgram will use nova-3's multilingual mode (English, Spanish, French, German, Hindi, Russian, Portuguese, Japanese, Italian, Dutch)."
         case (.apple, .auto):
-            return "Apple has no auto mode — Orbit Dictation falls back to your system language."
+            return "Apple has no auto mode — Comet falls back to your system language."
         case (.openai, .auto), (.groqWhisper, .auto), (.elevenlabs, .auto):
             return "The provider will detect the language on each recording."
         default:
-            return "Orbit Dictation will tell \(provider.displayName) which language to expect."
+            return "Comet will tell \(provider.displayName) which language to expect."
         }
     }
 }

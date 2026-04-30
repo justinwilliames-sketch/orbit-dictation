@@ -2,11 +2,11 @@
 
 ## [0.1.0] — 2026-04-30
 
-Initial Orbit Dictation release. Forked from [Whispur](https://github.com/sophiie-ai/whispur) at v0.13.4.
+Initial Comet release. Forked from [Whispur](https://github.com/sophiie-ai/whispur) at v0.13.4.
 
 ### Branding
 
-* Application name: Orbit Dictation
+* Application name: Comet
 * Bundle identifier: `team.yourorbit.OrbitDictation`
 * App icon, menu bar glyph, and Settings/About surfaces rebranded for Orbit
 * Application Support directory and Keychain service rescoped under the Orbit identifier so installations do not collide with upstream Whispur

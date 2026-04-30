@@ -30,7 +30,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: team.yourorbit.OrbitDictation
-        PRODUCT_NAME: "Orbit Dictation"
+        PRODUCT_NAME: "Comet"
         MARKETING_VERSION: "0.1.0" # x-release-please-version
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_ENTITLEMENTS: OrbitDictation.entitlements
@@ -41,16 +41,16 @@ targets:
       path: Info.plist
       properties:
         CFBundleDevelopmentRegion: en
-        CFBundleDisplayName: Orbit Dictation
-        CFBundleName: Orbit Dictation
+        CFBundleDisplayName: Comet
+        CFBundleName: Comet
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         LSUIElement: true
         LSApplicationCategoryType: public.app-category.productivity
         LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
-        NSMicrophoneUsageDescription: "Orbit Dictation uses your microphone only when you start dictation, so it can capture speech and turn it into text."
-        NSSpeechRecognitionUsageDescription: "Orbit Dictation uses Apple's speech recognition when you choose the on-device Apple provider for local dictation."
-        NSAccessibilityUsageDescription: "Orbit Dictation uses Accessibility access to detect the focused text field and paste your transcript back where you're typing."
+        NSMicrophoneUsageDescription: "Comet uses your microphone only when you start dictation, so it can capture speech and turn it into text."
+        NSSpeechRecognitionUsageDescription: "Comet uses Apple's speech recognition when you choose the on-device Apple provider for local dictation."
+        NSAccessibilityUsageDescription: "Comet uses Accessibility access to detect the focused text field and paste your transcript back where you're typing."
         NSHumanReadableCopyright: "© 2026 Justin Williames. Built on Whispur (MIT)."
         NSPrincipalClass: NSApplication
         NSSupportsAutomaticTermination: true

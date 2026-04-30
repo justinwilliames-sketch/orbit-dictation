@@ -5,7 +5,7 @@ import os
 
 private let logger = Logger(subsystem: "team.yourorbit.OrbitDictation", category: "Learning")
 
-/// Captures what Orbit Dictation just pasted and, on the next dictation, re-reads
+/// Captures what Comet just pasted and, on the next dictation, re-reads
 /// the focused text field to see whether the user corrected any words.
 /// Word-level substitutions are proposed (via a confirmation alert) as
 /// additions to the custom vocabulary so STT biases toward them next time.

@@ -1,6 +1,6 @@
-name: Build Orbit Dictation
+name: Build Comet
 
-# Builds an unsigned Orbit Dictation.app, wraps it in a .dmg, and (when
+# Builds an unsigned Comet.app, wraps it in a .dmg, and (when
 # triggered by a v*.*.* tag) attaches the .dmg + appcast.xml to a GitHub
 # Release. Modelled on the orion-by-orbit build workflow.
 #
@@ -68,7 +68,7 @@ jobs:
           BUILD_NUMBER="${{ github.run_number }}"
           echo "marketing_version=$MARKETING_VERSION" >> "$GITHUB_OUTPUT"
           echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
-          echo "Building Orbit Dictation $MARKETING_VERSION (build $BUILD_NUMBER)"
+          echo "Building Comet $MARKETING_VERSION (build $BUILD_NUMBER)"
 
       - name: Build (unsigned, Release)
         run: |
@@ -89,9 +89,9 @@ jobs:
         id: locate
         run: |
           set -e
-          APP_PATH=$(find build -name "Orbit Dictation.app" -type d | head -n 1)
+          APP_PATH=$(find build -name "Comet.app" -type d | head -n 1)
           if [ -z "$APP_PATH" ]; then
-            echo "::error::Could not find Orbit Dictation.app under build/"
+            echo "::error::Could not find Comet.app under build/"
             find build -name "*.app" -type d
             exit 1
           fi
@@ -147,14 +147,14 @@ jobs:
           set -e
           APP_PATH="${{ steps.locate.outputs.app_path }}"
           VERSION="${GITHUB_REF_NAME:-dev-$(date +%Y%m%d-%H%M%S)}"
-          DMG_NAME="OrbitDictation-${VERSION}.dmg"
+          DMG_NAME="Comet-${VERSION}.dmg"
 
           mkdir -p dist dmg-staging
           cp -R "$APP_PATH" dmg-staging/
           ln -s /Applications dmg-staging/Applications
 
           hdiutil create \
-            -volname "Orbit Dictation" \
+            -volname "Comet" \
             -srcfolder dmg-staging \
             -ov \
             -format UDZO \
@@ -226,12 +226,12 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
             <channel>
-              <title>Orbit Dictation</title>
+              <title>Comet</title>
               <link>https://github.com/${GITHUB_REPOSITORY}/releases/latest</link>
-              <description>Orbit Dictation — menu-bar voice dictation for macOS.</description>
+              <description>Comet — menu-bar voice dictation for macOS.</description>
               <language>en</language>
               <item>
-                <title>Orbit Dictation ${SHORT_VERSION}</title>
+                <title>Comet ${SHORT_VERSION}</title>
                 <link>https://github.com/${GITHUB_REPOSITORY}/releases/tag/${GITHUB_REF_NAME}</link>
                 <sparkle:version>${VERSION}</sparkle:version>
                 <sparkle:shortVersionString>${SHORT_VERSION}</sparkle:shortVersionString>
@@ -254,36 +254,36 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
-          name: "Orbit Dictation — latest dev build"
+          name: "Comet — latest dev build"
           files: |
             ${{ steps.dmg.outputs.dmg_path }}
             ${{ steps.appcast.outputs.appcast_path }}
           prerelease: true
           make_latest: "false"
           body: |
-            **Orbit Dictation — menu-bar voice dictation for macOS, part of [Orbit](https://get.yourorbit.team).** Rolling latest dev build, refreshed on every push to `main`. For tagged stable releases see the [Releases list](https://github.com/justinwilliames-sketch/orbit-dictation/releases).
+            **Comet — menu-bar voice dictation for macOS, part of [Orbit](https://get.yourorbit.team).** Rolling latest dev build, refreshed on every push to `main`. For tagged stable releases see the [Releases list](https://github.com/justinwilliames-sketch/orbit-dictation/releases).
 
             Built from commit [`${{ github.sha }}`](https://github.com/justinwilliames-sketch/orbit-dictation/commit/${{ github.sha }}).
 
             > [!IMPORTANT]
             > **You MUST run a Terminal command before this app will open.**
-            > Orbit Dictation is unsigned (no Apple Developer ID yet), so macOS Gatekeeper will refuse to launch it.
+            > Comet is unsigned (no Apple Developer ID yet), so macOS Gatekeeper will refuse to launch it.
 
             ## Install
 
             ### 1. Download the .dmg below
-            ### 2. Drag Orbit Dictation into Applications
+            ### 2. Drag Comet into Applications
             ### 3. ⚠️ REQUIRED — run this in Terminal
 
             ```bash
-            xattr -dr com.apple.quarantine "/Applications/Orbit Dictation.app"
+            xattr -dr com.apple.quarantine "/Applications/Comet.app"
             ```
 
             One-time per install. Right-click → **Open** also works.
 
             ### 4. Launch from Applications
 
-            Orbit Dictation appears in your menu bar. Grant Microphone + Accessibility permissions when prompted.
+            Comet appears in your menu bar. Grant Microphone + Accessibility permissions when prompted.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -294,16 +294,16 @@ jobs:
           files: |
             ${{ steps.dmg.outputs.dmg_path }}
             ${{ steps.appcast.outputs.appcast_path }}
-          name: Orbit Dictation ${{ github.ref_name }}
+          name: Comet ${{ github.ref_name }}
           generate_release_notes: true
           prerelease: false
           make_latest: "true"
           body: |
-            **Orbit Dictation — menu-bar voice dictation for macOS, part of [Orbit](https://get.yourorbit.team).**
+            **Comet — menu-bar voice dictation for macOS, part of [Orbit](https://get.yourorbit.team).**
 
             > [!IMPORTANT]
             > **You MUST run a Terminal command before this app will open.**
-            > Orbit Dictation is unsigned (no Apple Developer ID yet), so macOS Gatekeeper will refuse to launch it.
+            > Comet is unsigned (no Apple Developer ID yet), so macOS Gatekeeper will refuse to launch it.
 
             ## Install — three steps, do all of them
 
@@ -311,21 +311,21 @@ jobs:
 
             Click `${{ steps.dmg.outputs.dmg_name }}` below.
 
-            ### 2. Drag Orbit Dictation into Applications
+            ### 2. Drag Comet into Applications
 
-            Open the `.dmg`, drag the **Orbit Dictation** icon into the **Applications** shortcut.
+            Open the `.dmg`, drag the **Comet** icon into the **Applications** shortcut.
 
             ### 3. ⚠️ REQUIRED — run this in Terminal
 
             ```bash
-            xattr -dr com.apple.quarantine "/Applications/Orbit Dictation.app"
+            xattr -dr com.apple.quarantine "/Applications/Comet.app"
             ```
 
             One-time per install. Right-click → **Open** also works, as does System Settings → Privacy & Security → "Open Anyway".
 
             ### 4. Launch from Applications
 
-            Orbit Dictation runs in your menu bar (no Dock icon). Grant Microphone + Accessibility permissions when first prompted.
+            Comet runs in your menu bar (no Dock icon). Grant Microphone + Accessibility permissions when first prompted.
 
             ## What this is
 

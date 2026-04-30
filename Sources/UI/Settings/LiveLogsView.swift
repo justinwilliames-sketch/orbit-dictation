@@ -4,7 +4,7 @@ import Foundation
 import OSLog
 import SwiftUI
 
-/// Reads recent log entries emitted by Orbit Dictation's own subsystem from
+/// Reads recent log entries emitted by Comet's own subsystem from
 /// the macOS unified log store. Lets users see what `AXIsProcessTrusted()`
 /// (and other instrumented checks) are actually returning without dropping
 /// to Terminal and running `log stream`.
