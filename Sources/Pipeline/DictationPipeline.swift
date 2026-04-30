@@ -366,18 +366,19 @@ final class DictationPipeline: ObservableObject {
 
                 // Dynamic max_tokens cap based on input length. Proper cleanup
                 // produces output close to the input length — at most a modest
-                // expansion when numerals replace words and punctuation gets
-                // added. Capping max_tokens prevents runaway expansion loops
-                // where the model paraphrases into long second-person prose
-                // or repeats the same sentence.
+                // expansion when numerals replace words, punctuation gets
+                // added, or a list with a header gets bulleted. Capping
+                // max_tokens prevents runaway expansion loops where the model
+                // paraphrases into long second-person prose or repeats the
+                // same sentence.
                 //
                 // ~4 chars/token average × 0.5 = chars/2 tokens for the
-                // cleaned output, plus a 200-token buffer for the
-                // <analysis> reasoning block (reflect-then-act pattern that
-                // improves list detection + person matching). Floor at 250
-                // so very short utterances aren't truncated mid-sentence.
+                // cleaned output. Floor at 180 so short utterances aren't
+                // truncated mid-sentence after bulleting. Tight by design;
+                // the bullet-aware expansion guardrail catches any output
+                // that slips through.
                 let inputChars = normalizedRawTranscript.count
-                let dynamicMaxTokens = max(250, inputChars / 2 + 200)
+                let dynamicMaxTokens = max(180, inputChars / 2 + 80)
 
                 do {
                     let response = try await llmProvider.complete(
