@@ -156,7 +156,12 @@ final class HotkeyManager: ObservableObject {
         // System Settings, the issue is at the OS level (TCC not honouring
         // the grant for our binary identity), not the in-app polling or
         // SwiftUI propagation.
-        logger.info("AXIsProcessTrusted() = \(trusted ? "true" : "false") · bundlePath=\(Bundle.main.bundleURL.path)")
+        // `privacy: .public` — Swift's Logger redacts dynamic values to
+        // `<private>` by default. We want this log line to be human-readable
+        // in Console.app and via the in-app Live Logs viewer for diagnostic
+        // purposes; the AXIsProcessTrusted result and bundle path are not
+        // sensitive.
+        logger.info("AXIsProcessTrusted() = \(trusted ? "true" : "false", privacy: .public) · bundlePath=\(Bundle.main.bundleURL.path, privacy: .public)")
         isAccessibilityGranted = trusted
 
         if trusted && eventTap == nil {

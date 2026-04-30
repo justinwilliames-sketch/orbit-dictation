@@ -20,7 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         didFinishLaunching = true
-        logger.info("Orbit Dictation launched from: \(Bundle.main.bundleURL.path)")
+        logger.info("Orbit Dictation launched from: \(Bundle.main.bundleURL.path, privacy: .public)")
 
         // App Translocation check first. macOS Gatekeeper silently copies an
         // unsigned + quarantined app to a randomised read-only path under
@@ -94,7 +94,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         guard isTranslocated else { return false }
 
-        logger.error("App Translocation detected — running from \(bundlePath)")
+        logger.error("App Translocation detected — running from \(bundlePath, privacy: .public)")
 
         let command = #"xattr -dr com.apple.quarantine "/Applications/Orbit Dictation.app""#
 
