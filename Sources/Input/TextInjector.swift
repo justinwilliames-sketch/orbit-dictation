@@ -23,8 +23,17 @@ enum TextInjector {
             return
         }
 
-        // Write text to clipboard
+        // Write text to clipboard. Plain text is the universal fallback;
+        // when the cleaned output contains list lines (`• item` or `- item`),
+        // we additionally write an RTF representation so rich-text-aware
+        // targets (Mail, Notes, Pages, Word, Notion, Slack, etc.) render the
+        // bullets as a real list with proper indent. Plain-text-only targets
+        // (code editors, Terminal, chat input fields) ignore the RTF and use
+        // the `•` symbols verbatim.
         pasteboard.clearContents()
+        if let rtfData = makeRTF(from: text) {
+            pasteboard.setData(rtfData, forType: .rtf)
+        }
         pasteboard.setString(text, forType: .string)
         let pasteChangeCount = pasteboard.changeCount
 
@@ -62,6 +71,80 @@ enum TextInjector {
                 logger.info("Clipboard changed during paste — skipping restore to preserve new contents")
             }
         }
+    }
+
+    /// Builds an RTF representation of `text` with proper list paragraph
+    /// styling when list lines are present. Returns `nil` when the text has
+    /// no list markers — in that case we want plain-text-only paste so we
+    /// don't pollute the destination's font/styling with RTF defaults.
+    ///
+    /// List detection: any line whose first non-whitespace characters are
+    /// `• ` (the symbol we emit) or `- ` (Markdown-style fallback). Each
+    /// detected line gets a paragraph style with `firstLineHeadIndent: 0`
+    /// (bullet sits at the margin) and `headIndent: 18pt` (wrapped text
+    /// aligns under the first character after the bullet). The bullet itself
+    /// is rendered as `•\t` so rich-text apps render the indent natively.
+    ///
+    /// System font at the default body size is used for both list and prose
+    /// runs so the destination app's font choice isn't overridden — only
+    /// the paragraph-level structure (the indent) gets carried through.
+    private static func makeRTF(from text: String) -> Data? {
+        let lines = text.components(separatedBy: "\n")
+
+        let hasList = lines.contains { line in
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            return trimmed.hasPrefix("• ") || trimmed.hasPrefix("- ") || trimmed.hasPrefix("* ")
+        }
+        guard hasList else { return nil }
+
+        let bodyFont = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+
+        let listParagraphStyle = NSMutableParagraphStyle()
+        listParagraphStyle.firstLineHeadIndent = 0
+        listParagraphStyle.headIndent = 18
+        listParagraphStyle.tabStops = [NSTextTab(textAlignment: .left, location: 18, options: [:])]
+
+        let bodyParagraphStyle = NSMutableParagraphStyle()
+
+        let attributed = NSMutableAttributedString()
+
+        for (index, line) in lines.enumerated() {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            let isBullet = trimmed.hasPrefix("• ") || trimmed.hasPrefix("- ") || trimmed.hasPrefix("* ")
+
+            if isBullet {
+                // Strip the original marker (one of `• `, `- `, `* `) and
+                // re-emit a real bullet glyph followed by a tab so the
+                // paragraph's tab stop kicks in. Using a tab rather than
+                // a space lets receiving apps render proper hanging indent
+                // when the line wraps.
+                let content = String(trimmed.dropFirst(2))
+                attributed.append(NSAttributedString(
+                    string: "•\t\(content)",
+                    attributes: [
+                        .font: bodyFont,
+                        .paragraphStyle: listParagraphStyle,
+                    ]
+                ))
+            } else {
+                attributed.append(NSAttributedString(
+                    string: line,
+                    attributes: [
+                        .font: bodyFont,
+                        .paragraphStyle: bodyParagraphStyle,
+                    ]
+                ))
+            }
+
+            if index < lines.count - 1 {
+                attributed.append(NSAttributedString(string: "\n"))
+            }
+        }
+
+        return try? attributed.data(
+            from: NSRange(location: 0, length: attributed.length),
+            documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]
+        )
     }
 
     private static func snapshotPasteboard(_ pasteboard: NSPasteboard) async -> [NSPasteboardItem]? {
