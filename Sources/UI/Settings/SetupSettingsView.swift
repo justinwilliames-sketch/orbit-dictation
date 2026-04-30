@@ -192,6 +192,11 @@ struct SetupSettingsView: View {
                     .padding(.top, 8)
                 }
 
+                DisclosureGroup("Live logs (advanced)") {
+                    LiveLogsView()
+                        .padding(.top, 8)
+                }
+
                 DisclosureGroup("Still stuck? Nuclear reset (recommended last)") {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("If remove + re-add + toggle still doesn't pick up, the system permission database (tccd) has a cached entry pointing at a stale bundle. Wipe all permission grants for Orbit Dictation and start fresh:")
