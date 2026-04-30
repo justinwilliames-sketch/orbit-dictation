@@ -1,4 +1,5 @@
 import AppKit
+import ApplicationServices
 import Foundation
 import os
 
@@ -23,6 +24,14 @@ enum TextInjector {
             return
         }
 
+        // Read the focused text field's cursor context via Accessibility.
+        // If the character immediately before the cursor is non-whitespace,
+        // prepend a space so dictating into mid-sentence text doesn't
+        // jam-words-together. AX lookup is best-effort; falls through
+        // silently for apps that don't expose the attribute (Electron,
+        // some web fields). Latency is ~3–10ms in practice.
+        let finalText = applyLeadingSpaceIfNeeded(to: text)
+
         // Write text to clipboard. Plain text is the universal fallback;
         // when the cleaned output contains list lines (`• item` or `- item`),
         // we additionally write an RTF representation so rich-text-aware
@@ -31,10 +40,10 @@ enum TextInjector {
         // (code editors, Terminal, chat input fields) ignore the RTF and use
         // the `•` symbols verbatim.
         pasteboard.clearContents()
-        if let rtfData = makeRTF(from: text) {
+        if let rtfData = makeRTF(from: finalText) {
             pasteboard.setData(rtfData, forType: .rtf)
         }
-        pasteboard.setString(text, forType: .string)
+        pasteboard.setString(finalText, forType: .string)
         let pasteChangeCount = pasteboard.changeCount
 
         // Brief wait for app focus to return. 15ms is enough on modern
@@ -71,6 +80,103 @@ enum TextInjector {
                 logger.info("Clipboard changed during paste — skipping restore to preserve new contents")
             }
         }
+    }
+
+    /// Reads the focused text field's cursor context via Accessibility and
+    /// prepends a space if the character immediately before the cursor is
+    /// non-whitespace. Catches the "type into mid-sentence" case where
+    /// pasting "world" after "hello" without a space would produce
+    /// "helloworld".
+    ///
+    /// Best-effort: any AX failure (web text fields, Electron apps that
+    /// don't expose AXSelectedTextRange / AXStringForRange, fields that
+    /// don't have AXFocusedUIElement) returns the original text unchanged
+    /// rather than blocking paste. AX latency is ~3–10ms in practice.
+    ///
+    /// Behaviour matrix:
+    ///   - Cursor at position 0 → no leading space (nothing to follow)
+    ///   - Char before cursor is whitespace or newline → no leading space
+    ///   - Char before cursor is any other character → prepend " "
+    ///   - AX read fails for any reason → no leading space (status quo)
+    private static func applyLeadingSpaceIfNeeded(to text: String) -> String {
+        guard let charBefore = readCharacterBeforeCursor() else {
+            return text
+        }
+
+        // Only prepend when we have a clear non-whitespace character before
+        // the cursor. Empty string means cursor is at position 0.
+        if charBefore.isEmpty {
+            return text
+        }
+        if charBefore.allSatisfy({ $0.isWhitespace || $0.isNewline }) {
+            return text
+        }
+
+        logger.debug("Leading space prepended (preceded by non-whitespace)")
+        return " " + text
+    }
+
+    /// Returns the character immediately before the focused field's cursor,
+    /// or `nil` if the AX lookup fails at any step. Returns "" (empty) when
+    /// the cursor is at position 0.
+    private static func readCharacterBeforeCursor() -> String? {
+        let systemWide = AXUIElementCreateSystemWide()
+
+        // Focused UI element across the system (frontmost app's focused
+        // text input). Returns nil for apps that don't expose this — we
+        // fall through silently and skip the space.
+        var focused: CFTypeRef?
+        let focusResult = AXUIElementCopyAttributeValue(
+            systemWide,
+            kAXFocusedUIElementAttribute as CFString,
+            &focused
+        )
+        guard focusResult == .success, let focusedRef = focused else {
+            return nil
+        }
+        let element = focusedRef as! AXUIElement
+
+        // Selected text range — for an unselected cursor this is a
+        // zero-length range at the insertion point. For a selection
+        // we still use the start-of-range to mean "where new text would
+        // land", which is the desired semantics here.
+        var rangeRef: CFTypeRef?
+        let rangeResult = AXUIElementCopyAttributeValue(
+            element,
+            kAXSelectedTextRangeAttribute as CFString,
+            &rangeRef
+        )
+        guard rangeResult == .success, let rangeAxValue = rangeRef else {
+            return nil
+        }
+
+        var range = CFRange(location: 0, length: 0)
+        let extracted = AXValueGetValue(rangeAxValue as! AXValue, .cfRange, &range)
+        guard extracted else { return nil }
+
+        // Cursor at the very start: caller treats this as "no space".
+        if range.location == 0 {
+            return ""
+        }
+
+        // Read just the character immediately before the cursor.
+        var beforeRange = CFRange(location: range.location - 1, length: 1)
+        guard let beforeAxValue = AXValueCreate(.cfRange, &beforeRange) else {
+            return nil
+        }
+
+        var charRef: CFTypeRef?
+        let charResult = AXUIElementCopyParameterizedAttributeValue(
+            element,
+            kAXStringForRangeParameterizedAttribute as CFString,
+            beforeAxValue,
+            &charRef
+        )
+        guard charResult == .success, let str = charRef as? String else {
+            return nil
+        }
+
+        return str
     }
 
     /// Builds an RTF representation of `text` with proper list paragraph

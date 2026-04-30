@@ -205,6 +205,10 @@ enum Prompts {
         - Comma-separated phrases that aren't peer items: "I went to the shop, picked up bread, and walked home" — these are clauses describing one continuous action, not a list of things.
         - Mentioning the noun "bullet" or "list" inside an unrelated sentence — e.g. "add a bullet about rollback plan" — does not by itself request list formatting.
 
+        TIE-BREAKER: WHEN IN DOUBT, BULLET
+
+        If you're uncertain whether to bullet or stay as prose, bullet. The cost of an unwanted bullet is small (paste reads as a short list); the cost of a missed list is large (the user wanted formatting and got a comma-jam).
+
         EXAMPLES
 
         Input: "Grocery list. Apples, bananas, oranges, sugar, toothpaste, toilet rolls, nappies, apple pie."
@@ -219,6 +223,36 @@ enum Prompts {
         • Toilet rolls
         • Nappies
         • Apple pie
+
+        Input: "1, 2, 3, 4, 5, 6, 7."
+        Output:
+        • 1
+        • 2
+        • 3
+        • 4
+        • 5
+        • 6
+        • 7
+
+        Input: "Give me a list of apples, bananas, carrots and tomatoes."
+        Output:
+        Give me a list of:
+
+        • Apples
+        • Bananas
+        • Carrots
+        • Tomatoes
+
+        Input: "List of countries. Kenya, Ethiopia, China, Australia, Nigeria, India."
+        Output:
+        List of countries:
+
+        • Kenya
+        • Ethiopia
+        • China
+        • Australia
+        • Nigeria
+        • India
 
         Input: "put together a list of the following almond milk milk oranges and bananas"
         Output:
