@@ -252,6 +252,27 @@ struct SetupSettingsView: View {
                 Divider()
 
                 VStack(alignment: .leading, spacing: 6) {
+                    Text("Diagnostic info")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Text("Running from:")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text(Bundle.main.bundleURL.path)
+                        .font(.system(.caption2, design: .monospaced))
+                        .textSelection(.enabled)
+                        .padding(8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    Text("If this isn't /Applications/Orbit Dictation.app, your TCC grants are being recorded against the wrong path. Move the app, run the xattr command, and relaunch.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 6) {
                     Text("Why this happens")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)

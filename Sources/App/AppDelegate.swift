@@ -20,7 +20,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         didFinishLaunching = true
-        logger.info("Orbit Dictation launched")
+        logger.info("Orbit Dictation launched from: \(Bundle.main.bundleURL.path)")
+
+        // App Translocation check first. macOS Gatekeeper silently copies an
+        // unsigned + quarantined app to a randomised read-only path under
+        // /private/var/folders/.../AppTranslocation/... on each launch. Any
+        // Mic / Accessibility / Keychain grant the user makes is recorded
+        // against that ephemeral path; the next launch produces a fresh
+        // path so the grants don't apply. Detecting + blocking here is the
+        // only way to keep the user from wasting time granting permissions
+        // that won't persist.
+        if showTranslocationAlertAndQuitIfNeeded() {
+            return
+        }
+
         presentOnboardingIfNeeded()
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
@@ -66,6 +79,65 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             object: SettingsTab.setup.rawValue
         )
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    /// Returns true if App Translocation is in effect and a blocking alert
+    /// was shown. macOS uses paths like
+    /// `/private/var/folders/<...>/AppTranslocation/<UUID>/d/<bundle>.app`
+    /// for unsigned + quarantined apps; the path UUID rotates on each
+    /// launch so any TCC grant becomes a one-shot.
+    private func showTranslocationAlertAndQuitIfNeeded() -> Bool {
+        let bundlePath = Bundle.main.bundleURL.path
+        let isTranslocated =
+            bundlePath.contains("/AppTranslocation/") ||
+            bundlePath.hasPrefix("/private/var/folders/")
+
+        guard isTranslocated else { return false }
+
+        logger.error("App Translocation detected — running from \(bundlePath)")
+
+        let command = #"xattr -dr com.apple.quarantine "/Applications/Orbit Dictation.app""#
+
+        let alert = NSAlert()
+        alert.messageText = "Orbit Dictation can't keep permissions yet"
+        alert.informativeText = """
+            macOS is running this build from a translocated location because the Gatekeeper quarantine flag is still attached. Any Microphone or Accessibility permission you grant in this state would be associated with a path that changes on every launch — so the grants won't persist.
+
+            Fix it once: quit Orbit Dictation, run this in Terminal, then relaunch from /Applications.
+
+            \(command)
+
+            Click 'Copy & open Terminal' to copy the command and launch Terminal in one go.
+            """
+        alert.alertStyle = .critical
+        if let icon = NSImage(named: "AppIcon") { alert.icon = icon }
+        alert.addButton(withTitle: "Copy & open Terminal")
+        alert.addButton(withTitle: "Copy command")
+        alert.addButton(withTitle: "Quit")
+
+        if let window = alert.window as? NSPanel {
+            window.level = .floating
+        }
+        NSApp.activate(ignoringOtherApps: true)
+
+        let response = alert.runModal()
+
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setString(command, forType: .string)
+
+        if response == .alertFirstButtonReturn {
+            let terminalURL = URL(fileURLWithPath: "/System/Applications/Utilities/Terminal.app")
+            NSWorkspace.shared.open(terminalURL)
+        }
+
+        // Always quit after the dialog — there is no point continuing the
+        // current process; the user needs to relaunch from a stable path.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            NSApp.terminate(nil)
+        }
+
+        return true
     }
 
     func connect(appState: AppState) {
