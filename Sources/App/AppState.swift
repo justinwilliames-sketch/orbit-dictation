@@ -40,6 +40,7 @@ final class AppState: ObservableObject {
     private let shortcutSessionController = ShortcutSessionController()
     private var permissionObservers: [NSObjectProtocol] = []
     private var phaseCancellable: AnyCancellable?
+    private var hotkeyManagerCancellable: AnyCancellable?
 
     init() {
         let loadedHoldShortcut = Self.loadShortcut(forKey: "holdShortcut", fallback: .fnKey)
@@ -87,6 +88,7 @@ final class AppState: ObservableObject {
         hotkeyManager.toggleBinding = sanitizedToggleShortcut
 
         setupHotkeys()
+        observeHotkeyManager()
         observePipeline()
         setupLearning()
 
@@ -384,6 +386,20 @@ final class AppState: ObservableObject {
         // "Missing" for up to the polling interval.
         hotkeyManager.refreshAccessibilityStatus()
         microphoneAccessGranted = AudioRecorder.hasMicrophoneAccess
+    }
+
+    /// Re-emit HotkeyManager's `objectWillChange` from AppState so SwiftUI
+    /// views observing `appState.hotkeyManager.isAccessibilityGranted`
+    /// re-render the moment the underlying `@Published` flips. Without this
+    /// bridge, HotkeyManager's publisher fires in isolation and Views
+    /// observing AppState don't know to redraw — the badge stays "Missing"
+    /// even after AXIsProcessTrusted() has flipped to true under the hood.
+    private func observeHotkeyManager() {
+        hotkeyManagerCancellable = hotkeyManager.objectWillChange
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
     }
 
     private func setupHotkeys() {

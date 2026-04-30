@@ -12,8 +12,16 @@ private let trackedModifierKeyCodes: Set<UInt16> = [
 ]
 
 /// Global hotkey detection using CGEventTap with NSEvent monitor fallback.
+///
+/// `ObservableObject` conformance: required so SwiftUI views observing
+/// `AppState` re-render when `isAccessibilityGranted` flips. Without this
+/// the @Published on the property fires HotkeyManager's own publisher but
+/// AppState's `objectWillChange` never sees the event, and the Setup card's
+/// "Missing"/"Granted" badge would lag the actual state until something else
+/// on AppState changes. AppState subscribes to this object's
+/// `objectWillChange` in its initialiser and re-emits.
 @MainActor
-final class HotkeyManager {
+final class HotkeyManager: ObservableObject {
 
     enum Event: Sendable {
         case holdActivated
@@ -141,6 +149,14 @@ final class HotkeyManager {
 
     private func checkAccessibilityAndInstall() {
         let trusted = AXIsProcessTrusted()
+        // Logged so users + maintainers can trace what macOS actually thinks
+        // by running:
+        //   log stream --predicate 'subsystem == "team.yourorbit.OrbitDictation" AND category == "HotkeyManager"' --info
+        // If this stays false even after the user grants Accessibility in
+        // System Settings, the issue is at the OS level (TCC not honouring
+        // the grant for our binary identity), not the in-app polling or
+        // SwiftUI propagation.
+        logger.info("AXIsProcessTrusted() = \(trusted ? "true" : "false") · bundlePath=\(Bundle.main.bundleURL.path)")
         isAccessibilityGranted = trusted
 
         if trusted && eventTap == nil {
