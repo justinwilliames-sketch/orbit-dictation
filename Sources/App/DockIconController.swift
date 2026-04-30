@@ -38,6 +38,15 @@ final class DockIconController {
             NotificationCenter.default.removeObserver(entry.observer)
         }
         updateActivationPolicy()
+        // Defensive nudge for the SwiftUI MenuBarExtra ↔ Window
+        // interaction. Closing the Settings (or About / Onboarding)
+        // window has been observed to leave the menu-bar mic glyph
+        // hidden even though the process is still running — Sir
+        // confirmed dictation still works after the icon disappears.
+        // Re-activating the app forces AppKit to re-establish the
+        // status-bar surface; cheap call for an LSUIElement app
+        // since there's no Dock icon for it to bring forward.
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     private func updateActivationPolicy() {
