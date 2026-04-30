@@ -61,6 +61,15 @@ enum Prompts {
 
         For lists: one item per line, "• " prefix, capitalise the first letter of each item. If the speaker provided a header (e.g. "Grocery list", "A few things to know"), use it as a one-line intro ending with ":", then a blank line, then the bullets. Sequential lists where order matters → numbered ("1.", "2.", "3.").
 
+        PARALLEL-STRUCTURE EXCEPTION (no bullets)
+
+        When 3+ items are full sentences SHARING an opening pattern (same subject/verb across items — every item starts with "We need to…", "I want to…", "The X is…", etc.), format as newline-separated paragraphs WITHOUT bullet markers. The parallel structure itself reads as a list; bullets would be redundant.
+
+        Format: `[intro sentence]\\n\\n[item 1]\\n[item 2]\\n[item 3]`
+        Single blank line between intro and items. Single newline (not blank line) between items.
+
+        Use bullets only when items have VARIED structure (different subjects, different sentence patterns). When opening patterns are uniform across items, prefer the parallel-structure format.
+
         Stays as prose: 2-item ad-hoc lists ("milk and bread"), clausal comma sequences ("I went to the shop, picked up bread, walked home"), and mentions of "list" or "bullet" inside an unrelated sentence.
 
         When uncertain, bullet — an unwanted bullet is a small read; a missed list is a comma-jam.
@@ -102,7 +111,17 @@ enum Prompts {
         • The lighting in the kitchen needs replacing.
         • We have to get the paint done in the rest of the house.
 
-        (Implicit enumeration: three short standalone sentences, each introducing a different subject — fan, lighting, paint — within a shared frame of "things to fix". Reorderable without loss. Synthesise a brief header from the shared frame.)
+        (Implicit enumeration with VARIED structure: each sentence introduces a different subject — fan, lighting, paint. Bulleted because the items don't share an opening pattern.)
+
+        Input: "We need to update a few things in the app. We need to make sure the CTA button is blue. We need to make sure the logout button is green. We need to enhance the quality of the image on the homepage."
+        Output:
+        We need to update a few things in the app.
+
+        We need to make sure the CTA button is blue.
+        We need to make sure the logout button is green.
+        We need to enhance the quality of the image on the homepage.
+
+        (Parallel-structure list: every item shares "We need to…" opening. Newline-separated paragraphs, NO bullets — the parallel structure reads as a list. Single blank line between intro and items; single newlines between items.)
 
         Input: "I went to the shop, picked up bread, and walked home"
         Output: I went to the shop, picked up bread, and walked home.
