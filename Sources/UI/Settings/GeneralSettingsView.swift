@@ -152,6 +152,13 @@ struct GeneralSettingsView: View {
             icon: "slider.horizontal.3"
         ) {
             VStack(alignment: .leading, spacing: 12) {
+                Toggle("Launch at login", isOn: Binding(
+                    get: { appState.launchAtLoginEnabled },
+                    set: { newValue in
+                        appState.launchAtLoginEnabled = newValue
+                        appState.applyLaunchAtLoginPreference()
+                    }
+                ))
                 Toggle("Preserve clipboard contents after paste", isOn: $appState.preserveClipboard)
                 Toggle("Play start and stop sounds", isOn: $appState.soundEnabled)
                 Toggle("Deep context", isOn: $appState.deepContextEnabled)

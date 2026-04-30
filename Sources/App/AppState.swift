@@ -2,6 +2,7 @@ import AppKit
 import AVFoundation
 import Combine
 import Foundation
+import ServiceManagement
 import SwiftUI
 
 /// Central application state used by the menu bar UI and settings window.
@@ -19,6 +20,11 @@ final class AppState: ObservableObject {
     @AppStorage("soundEnabled") var soundEnabled: Bool = true
     @AppStorage("showSetupGuide") var showSetupGuide: Bool = true
     @AppStorage("whispur.onboarding.completed") var onboardingCompleted: Bool = false
+    /// Default ON so first-install users get Comet in their menu bar
+    /// after a reboot without thinking about it. The first call to
+    /// `applyLaunchAtLoginPreference()` registers with SMAppService,
+    /// which triggers macOS to surface the Login Items approval prompt.
+    @AppStorage("launchAtLoginEnabled") var launchAtLoginEnabled: Bool = true
 
     @Published var holdShortcut: ShortcutBinding
     @Published var toggleShortcut: ShortcutBinding?
@@ -540,5 +546,39 @@ final class AppState: ObservableObject {
 
     private func persistShortcut(_ binding: ShortcutBinding?, forKey key: String) {
         UserDefaults.standard.set(binding?.storageValue ?? "off", forKey: key)
+    }
+
+    /// Reconcile the OS login-item registration with the stored
+    /// `launchAtLoginEnabled` preference. Called once at app launch
+    /// (from AppDelegate) and again whenever the user toggles the
+    /// setting in General Settings → Behavior.
+    ///
+    /// On first install with the preference defaulting ON, this fires
+    /// `register()` and macOS surfaces the System Settings → General →
+    /// Login Items approval prompt for the user to confirm.
+    func applyLaunchAtLoginPreference() {
+        let service = SMAppService.mainApp
+        let want = launchAtLoginEnabled
+        do {
+            switch service.status {
+            case .enabled:
+                if !want { try service.unregister() }
+            case .notRegistered, .notFound:
+                if want { try service.register() }
+            case .requiresApproval:
+                // User has the registration but hasn't approved it in
+                // System Settings yet. Nothing to force from here — the
+                // OS handles the approval flow. Keep our preference
+                // in sync with intent so a later approval lands in the
+                // expected state.
+                break
+            @unknown default:
+                break
+            }
+        } catch {
+            // Non-fatal — log via os.Logger if we want diagnostics, but
+            // there's nothing the user can do from here. Most failures
+            // are System Settings approval-state edge cases.
+        }
     }
 }

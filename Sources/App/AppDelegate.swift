@@ -154,6 +154,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard self.appState !== appState else { return }
         self.appState = appState
         presentOnboardingIfNeeded()
+        // Reconcile the OS login-item registration with the user's
+        // `launchAtLoginEnabled` preference (default ON). First-install
+        // users will see a System Settings approval prompt the first
+        // time this fires. Lives here rather than in
+        // applicationDidFinishLaunching because appState isn't connected
+        // until MenuBarExtra's .task runs, which is after launch.
+        appState.applyLaunchAtLoginPreference()
     }
 
     private func presentOnboardingIfNeeded() {
