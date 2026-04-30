@@ -364,16 +364,49 @@ final class DictationPipeline: ObservableObject {
             if looksLikeSpeech, let llmProvider = registry.makeLLMProvider(for: selectedLLM) {
                 phase = .cleaningTranscript
 
+                // Dynamic max_tokens cap based on input length. Proper cleanup
+                // produces output close to the input length — at most a modest
+                // expansion when numerals replace words and punctuation gets
+                // added. Capping max_tokens at ~50% character expansion + 50
+                // token safety buffer prevents runaway expansion loops where
+                // the model paraphrases into long second-person prose or
+                // repeats the same sentence.
+                //
+                // ~4 chars/token average × 0.5 = chars/2 tokens cap. Floor at
+                // 150 so very short utterances aren't truncated mid-sentence.
+                let inputChars = normalizedRawTranscript.count
+                let dynamicMaxTokens = max(150, inputChars / 2 + 50)
+
                 do {
                     let response = try await llmProvider.complete(
                         request: LLMRequest(
                             systemPrompt: buildSystemPrompt(vocabulary: customVocabulary),
-                            userMessage: normalizedRawTranscript
+                            userMessage: normalizedRawTranscript,
+                            maxTokens: dynamicMaxTokens
                         )
                     )
 
                     if let normalizedCleanedTranscript = normalizedTranscriptText(from: response.text) {
-                        cleanedTranscript = normalizedCleanedTranscript
+                        // Output-length sanity check. If the LLM has run away
+                        // (paraphrased into a long explanation, looped on a
+                        // single sentence, switched grammatical person, etc.),
+                        // the cleaned output ends up dramatically longer than
+                        // the input. Trust the prompt to do the right thing
+                        // most of the time, but reject the output and fall
+                        // back to the raw transcript when it's clearly drifted.
+                        let rawWords = normalizedRawTranscript.split { $0.isWhitespace }.count
+                        let cleanedWords = normalizedCleanedTranscript.split { $0.isWhitespace }.count
+                        let wordRatio = Double(cleanedWords) / Double(max(1, rawWords))
+                        let charRatio = Double(normalizedCleanedTranscript.count) / Double(max(1, normalizedRawTranscript.count))
+
+                        if wordRatio > 1.5 || charRatio > 2.0 {
+                            logger.warning(
+                                "LLM cleanup expansion guardrail tripped (\(cleanedWords, privacy: .public)w / \(rawWords, privacy: .public)w, ratio \(String(format: "%.2f", wordRatio), privacy: .public)) — using raw transcript instead"
+                            )
+                            cleanedTranscript = normalizedRawTranscript
+                        } else {
+                            cleanedTranscript = normalizedCleanedTranscript
+                        }
                     } else {
                         cleanedTranscript = ""
                     }
