@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.13] — 2026-05-01
+
+### Changed
+
+* **New start/finish chime.** Replaced the system "Tink" boop at recording start with a custom chime sourced from Orion Desktop Companion's ping set (`Resources/dictation-chime.mp3`, originally `ping-bb`). The same chime now also plays when the transcript has been pasted into the focused text field — so each dictation cycle is bookended by the same sound. The intermediate "Pop" at recording-stop and "Bottle" at no-speech are unchanged.
+
 ## [0.2.12] — 2026-05-01
 
 ### Fixed

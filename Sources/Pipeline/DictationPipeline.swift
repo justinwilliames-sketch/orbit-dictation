@@ -278,7 +278,7 @@ final class DictationPipeline: ObservableObject {
                 guard case .starting = self.phase else { return }
 
                 self.phase = .recording
-                self.playSound(.tink)
+                self.playSound(.dictationChime)
             }
         }
 
@@ -479,6 +479,10 @@ final class DictationPipeline: ObservableObject {
             await TextInjector.paste(finalTranscript, preserveClipboard: preserveClipboard)
 
             guard !Task.isCancelled else { throw CancellationError() }
+
+            // Mirror the start chime now that the transcript is in the
+            // user's text field. Same sound bookends the dictation cycle.
+            playSound(.dictationChime)
 
             onPasteCompleted?(finalTranscript)
 
