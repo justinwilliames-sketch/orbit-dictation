@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.17] — 2026-05-01
+
+### Changed
+
+* **Learn-from-edits is more permissive and observable.** The vocabulary-learning toast was firing far less often than the toggle's description implied. Three changes: (1) `pastedStillPresent` threshold dropped from 60% to 40%, so a 2-word edit on a 4-word transcript no longer trips the "user wiped the field" guard; (2) the toast auto-dismiss bumped from 15s to 45s so it isn't gone before you context-switch back; (3) every reconcile bail point now logs at `info` level under `subsystem == "team.yourorbit.OrbitDictation" AND category == "Learning"`, naming the exact reason — so when it doesn't fire you can see whether the app didn't expose its AX value, you switched apps, the snapshot went stale, or the diff produced no paired substitutions. Several apps (Electron, certain web fields) silently fail to expose `AXValue` and learn-from-edits can't reach into those — that's an OS-level limit, now visible in the logs.
+
 ## [0.2.16] — 2026-05-01
 
 ### Changed

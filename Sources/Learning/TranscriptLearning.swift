@@ -36,17 +36,20 @@ final class TranscriptLearning {
     // MARK: - Capture (right after paste)
 
     func captureAfterPaste(pastedText: String) {
-        guard isEnabled else { return }
+        guard isEnabled else {
+            logger.info("Learning capture skipped: feature disabled (learnFromEdits=off)")
+            return
+        }
         guard !pastedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
         guard let element = Self.copyFocusedTextElement() else {
-            logger.debug("Learning capture skipped: no focused text element")
+            logger.info("Learning capture skipped: no focused text element (app may not expose AX value — Electron apps and some web fields)")
             return
         }
 
         // Refuse password fields — we never want to read their contents.
         if Self.isSecureField(element) {
-            logger.debug("Learning capture skipped: secure text field")
+            logger.info("Learning capture skipped: secure text field")
             return
         }
 
@@ -69,24 +72,30 @@ final class TranscriptLearning {
     /// user made clean word-level substitutions, show a confirmation alert
     /// for each (up to 3) and invoke `onLearnTerm` for any they accept.
     func reconcile() async {
-        guard isEnabled else { return }
-        guard let snapshot = pending else { return }
+        guard isEnabled else {
+            logger.info("Learning reconcile skipped: feature disabled")
+            return
+        }
+        guard let snapshot = pending else {
+            logger.info("Learning reconcile skipped: no pending snapshot (capture didn't fire on the previous paste)")
+            return
+        }
         pending = nil
 
         // Stale after 5 minutes — reading long-abandoned fields is creepy.
         if Date().timeIntervalSince(snapshot.capturedAt) > 300 {
-            logger.debug("Learning reconcile skipped: snapshot stale")
+            logger.info("Learning reconcile skipped: snapshot stale (>5 min since paste)")
             return
         }
 
         let bundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         guard bundleID == snapshot.bundleID else {
-            logger.debug("Learning reconcile skipped: app changed")
+            logger.info("Learning reconcile skipped: app changed (was \(snapshot.bundleID ?? "-", privacy: .public), now \(bundleID ?? "-", privacy: .public))")
             return
         }
 
         guard let currentValue = Self.copyValue(snapshot.element) else {
-            logger.debug("Learning reconcile skipped: element no longer readable")
+            logger.info("Learning reconcile skipped: element no longer readable (window closed, focus lost, or AX value gone)")
             return
         }
 
@@ -94,7 +103,7 @@ final class TranscriptLearning {
         // pasted, the user probably replaced the whole thing — not a targeted
         // edit. Bail rather than guess.
         guard Self.pastedStillPresent(pasted: snapshot.pastedText, in: currentValue) else {
-            logger.debug("Learning reconcile skipped: pasted text no longer recognizable in field")
+            logger.info("Learning reconcile skipped: pasted text no longer recognizable in field (heavy edit threshold tripped)")
             return
         }
 
@@ -103,7 +112,11 @@ final class TranscriptLearning {
             fullValueBefore: snapshot.fullValue,
             fullValueAfter: currentValue
         )
-        guard !substitutions.isEmpty else { return }
+        guard !substitutions.isEmpty else {
+            logger.info("Learning reconcile: no word-level substitutions detected (pasted vs current matched 1:1)")
+            return
+        }
+        logger.info("Learning reconcile: \(substitutions.count, privacy: .public) substitution(s) detected → presenting toast")
 
         // Cap at 3 — more than that usually means the user rewrote the
         // sentence for style, not corrected STT.
@@ -173,15 +186,17 @@ final class TranscriptLearning {
 
     // MARK: - Diff
 
-    /// Returns true iff at least 60% of the pasted text's non-trivial words
-    /// still appear (in order) in the current field value. Lets us skip
-    /// "user wiped the field and typed something completely new" cases.
+    /// Returns true iff at least 40% of the pasted text's non-trivial words
+    /// still appear in the current field value. Lets us skip "user wiped the
+    /// field and typed something completely new" cases without rejecting
+    /// legitimate edits to short transcripts (a 2-word edit on a 4-word
+    /// paste is 50% overlap — a real edit, not a wipe).
     static func pastedStillPresent(pasted: String, in current: String) -> Bool {
         let pastedWords = tokenize(pasted).map { $0.lowercased() }.filter { $0.count > 1 }
         guard !pastedWords.isEmpty else { return false }
         let currentWords = Set(tokenize(current).map { $0.lowercased() })
         let hits = pastedWords.filter { currentWords.contains($0) }.count
-        return Double(hits) / Double(pastedWords.count) >= 0.6
+        return Double(hits) / Double(pastedWords.count) >= 0.4
     }
 
     /// Word-level substitutions the user made to the pasted text.

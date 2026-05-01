@@ -90,7 +90,13 @@ final class LearningToastPanelManager {
     private func scheduleAutoDismiss(center: LearningSuggestionCenter) {
         autoDismiss?.cancel()
         autoDismiss = Task { [weak self, weak center] in
-            try? await Task.sleep(for: .seconds(15))
+            // 45s instead of the original 15s — Sir reported missing the
+            // toast entirely. Vocabulary learning is a one-tap decision
+            // that benefits from a longer presence on screen; if the user
+            // is mid-task in another window, 15s is too short to context-
+            // switch back. Auto-dismiss still fires so a stale toast
+            // doesn't sit forever.
+            try? await Task.sleep(for: .seconds(45))
             guard !Task.isCancelled else { return }
             await MainActor.run {
                 center?.dismissAll()
