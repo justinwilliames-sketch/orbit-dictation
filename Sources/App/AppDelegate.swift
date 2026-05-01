@@ -10,9 +10,27 @@ extension Notification.Name {
 }
 
 /// Handles application lifecycle events.
+///
+/// Owns `AppState` and the menu-bar controller, so both are alive before
+/// any SwiftUI scene renders. Previously `AppState` was a SwiftUI
+/// `@StateObject` on the App struct, with the AppDelegate adopting it
+/// later via `connect(appState:)` triggered by a `.task` on the
+/// `MenuBarExtra` content. That handoff worked but coupled the launch
+/// sequence to SwiftUI's MenuBarExtra rendering — the same MenuBarExtra
+/// whose status item kept disappearing. Now AppDelegate owns the state
+/// directly; SwiftUI scenes read it via `appDelegate.appState`.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private weak var appState: AppState?
+    /// Created eagerly so `appState` is available the moment SwiftUI
+    /// starts evaluating its scene tree. AppDelegate is `@MainActor` and
+    /// `@NSApplicationDelegateAdaptor` instantiates it on the main thread,
+    /// which is the actor required by `AppState.init`.
+    let appState = AppState()
+
+    /// AppKit-managed menu bar status item. See `MenuBarController` for
+    /// the rationale on why we bypass SwiftUI's `MenuBarExtra` here.
+    let menuBar = MenuBarController()
+
     private var didFinishLaunching = false
     private var onboardingWindowController: OnboardingWindowController?
 
@@ -21,6 +39,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         didFinishLaunching = true
         logger.info("Comet launched from: \(Bundle.main.bundleURL.path, privacy: .public)")
+
+        // Install the manual NSStatusItem and wire it to live AppState.
+        // Has to come before any window-opening code runs so the menu-bar
+        // icon is up before Settings auto-opens at launch.
+        menuBar.attach(appState: appState)
+
+        // First-launch obligations that previously hung off the
+        // SwiftUI-side `connect(appState:)` handshake.
+        appState.applyLaunchAtLoginPreference()
 
         // Catch all `.whispurOpenSettings` posters (OnboardingWindow,
         // re-broadcast inside `postOpenSettings`, future call sites) and
@@ -114,9 +141,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// the user has come back to the app expecting to see something. Skipped
     /// during onboarding to avoid stacking two windows on first run.
     private func openSettingsOnLaunchIfNeeded() {
-        guard let appState, appState.onboardingCompleted else { return }
+        guard appState.onboardingCompleted else { return }
         guard onboardingWindowController == nil else { return }
         postOpenSettings()
+    }
+
+    /// Open the About window. Called from popover, AppDelegate hooks, or
+    /// the `comet://about` URL handler.
+    func showAbout() {
+        if let existing = NSApp.windows.first(where: {
+            ($0.identifier?.rawValue.contains("about") ?? false) &&
+            !String(describing: type(of: $0)).contains("MenuBarExtra") &&
+            !String(describing: type(of: $0)).contains("StatusBar")
+        }) {
+            DockIconController.shared.register(existing)
+            NSApp.activate(ignoringOtherApps: true)
+            existing.makeKeyAndOrderFront(nil)
+            existing.orderFrontRegardless()
+            return
+        }
+        if let url = URL(string: "comet://about") {
+            NSWorkspace.shared.open(url)
+        }
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    /// Open Settings to a specific tab. Public so the popover, Onboarding,
+    /// and other surfaces can route through a single AppKit-owned opener.
+    func showSettings(tab: SettingsTab = .setup) {
+        postOpenSettings(tab: tab.rawValue)
     }
 
     private func postOpenSettings(tab: String = SettingsTab.setup.rawValue) {
@@ -214,22 +267,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
 
-    func connect(appState: AppState) {
-        guard self.appState !== appState else { return }
-        self.appState = appState
-        presentOnboardingIfNeeded()
-        // Reconcile the OS login-item registration with the user's
-        // `launchAtLoginEnabled` preference (default ON). First-install
-        // users will see a System Settings approval prompt the first
-        // time this fires. Lives here rather than in
-        // applicationDidFinishLaunching because appState isn't connected
-        // until MenuBarExtra's .task runs, which is after launch.
-        appState.applyLaunchAtLoginPreference()
-    }
-
     private func presentOnboardingIfNeeded() {
         guard didFinishLaunching,
-              let appState,
               !appState.onboardingCompleted,
               onboardingWindowController == nil else {
             return
@@ -240,6 +279,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         onboardingWindowController = controller
         controller.present()
+    }
+
+    /// Open the menu-bar popover programmatically. Used by anything that
+    /// needs to surface the popover content without a click on the icon.
+    func openMenuBarPopover() {
+        menuBar.openPopover()
+    }
+
+    /// Close the menu-bar popover. Used before opening a Settings/About
+    /// window so the popover doesn't sit awkwardly over the new window.
+    func closeMenuBarPopover() {
+        menuBar.closePopover()
     }
 
     // MARK: - Post-update Gatekeeper help

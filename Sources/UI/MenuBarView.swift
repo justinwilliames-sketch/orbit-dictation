@@ -3,7 +3,6 @@ import SwiftUI
 
 struct MenuBarView: View {
     @ObservedObject var appState: AppState
-    @Environment(\.openWindow) private var openWindow
     @AppStorage("settings.selectedTab") private var selectedTabRaw = SettingsTab.setup.rawValue
 
     var body: some View {
@@ -307,13 +306,19 @@ struct MenuBarView: View {
 
     private func openSettings(tab: SettingsTab) {
         selectedTabRaw = tab.rawValue
-        WindowUtilities.dismissMenuBarPopover()
-        WindowUtilities.focusOrOpenWindow(id: .settings, using: openWindow)
+        // The popover is hosted in `NSPopover` by `MenuBarController`, so
+        // `@Environment(\.openWindow)` isn't reliably wired to the App's
+        // scene tree. Route window-opens through `AppDelegate` instead,
+        // which owns the AppKit-level scene-front logic.
+        let appDelegate = NSApp.delegate as? AppDelegate
+        appDelegate?.closeMenuBarPopover()
+        appDelegate?.showSettings(tab: tab)
     }
 
     private func openAbout() {
-        WindowUtilities.dismissMenuBarPopover()
-        WindowUtilities.focusOrOpenWindow(id: .about, using: openWindow)
+        let appDelegate = NSApp.delegate as? AppDelegate
+        appDelegate?.closeMenuBarPopover()
+        appDelegate?.showAbout()
     }
 
     private var primaryActionTitle: String {

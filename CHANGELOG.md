@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.7] — 2026-05-01
+
+### Fixed
+
+* **Menu-bar icon no longer disappears.** Replaced SwiftUI's `MenuBarExtra` with a manual `NSStatusItem` managed by `MenuBarController`. SwiftUI's `MenuBarExtra` in macOS 14/15 was structurally fragile — the underlying status item was repeatedly torn down on label re-evaluation, on `Window` scene activation (`NSApp.activate(ignoringOtherApps:)`), and on activation-policy flips. The previous defensive patches mitigated symptoms but never the root cause. Manual `NSStatusItem` is what production menu-bar apps (Bartender, iStat, Rectangle) use precisely because of this.
+
+### Internal
+
+* `AppDelegate` now owns `AppState` and `MenuBarController` directly, removing the SwiftUI `@StateObject` → `connect(appState:)` handshake that previously had to ride on a `MenuBarExtra` `.task`.
+* Popover content (`MenuBarView`) is hosted in `NSHostingController` inside `NSPopover`. Window-open routes go through `AppDelegate.showSettings(tab:)` / `.showAbout()` instead of relying on SwiftUI's `\.openWindow` environment, which isn't reliably wired into NSHostingController-hosted views.
+* Removed `WindowUtilities.swift` and the `MenuBarStatusIcon` / `MenuBarGlyphIcon` SwiftUI views — no longer used.
+
 ## [0.2.6] — 2026-05-01
 
 ### Fixed
