@@ -5,32 +5,28 @@ struct WhispurApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        // No `MenuBarExtra` — Comet manages its menu-bar status item
-        // manually via `MenuBarController` (owned by `AppDelegate`).
-        // SwiftUI's `MenuBarExtra` was structurally fragile in macOS 14/15:
-        // the underlying `NSStatusItem` was repeatedly torn down on label
-        // re-evaluation, on `Window` scene activation, and on activation-
-        // policy flips. Manual NSStatusItem management is what production
-        // menu-bar apps do for exactly this reason.
-
-        Window("Comet Settings", id: "settings") {
-            SettingsView(appState: appDelegate.appState)
-                .frame(minWidth: 860, minHeight: 620)
-                // Routes `comet://settings` URLs to this scene. AppDelegate
-                // uses `NSWorkspace.shared.open` (or scene-front lookup) to
-                // trigger this on launch and on second-activation.
-                .handlesExternalEvents(preferring: ["settings"], allowing: ["*"])
+        // All visible UI is AppKit-managed:
+        //   - Menu bar:  `MenuBarController` (NSStatusItem)
+        //   - Settings:  `SettingsWindowController`
+        //   - About:     `AboutWindowController`
+        //   - Onboarding: `OnboardingWindowController` (was already AppKit)
+        //
+        // SwiftUI Window/MenuBarExtra scenes proved too fragile when
+        // combined with NSPopover-hosted content and `LSUIElement = true`:
+        //   - MenuBarExtra status items were torn down on label re-eval,
+        //     scene activation, and activation-policy flips.
+        //   - `Window` scenes went stale after first close — `openWindow`
+        //     and `comet://` URL routing both stopped firing.
+        // Production menu-bar apps (Bartender, iStat, Rectangle) all use
+        // direct AppKit window management precisely because of this.
+        //
+        // SwiftUI's `App` protocol still requires at least one Scene, so we
+        // declare a `Settings` scene with empty content. It's never
+        // actually invoked at runtime (LSUIElement apps have no app menu
+        // bar to surface the standard "Settings…" item), but it satisfies
+        // the type system.
+        Settings {
+            EmptyView()
         }
-        .defaultSize(width: 980, height: 680)
-        .windowResizability(.contentSize)
-        .handlesExternalEvents(matching: ["settings"])
-
-        Window("About Comet", id: "about") {
-            AboutView()
-                .handlesExternalEvents(preferring: ["about"], allowing: ["*"])
-        }
-        .defaultSize(width: 360, height: 360)
-        .windowResizability(.contentSize)
-        .handlesExternalEvents(matching: ["about"])
     }
 }

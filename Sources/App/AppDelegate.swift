@@ -33,6 +33,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var didFinishLaunching = false
     private var onboardingWindowController: OnboardingWindowController?
+    private var settingsWC: SettingsWindowController?
+    private var aboutWC: AboutWindowController?
 
     private static let lastLaunchedVersionKey = "lastLaunchedShortVersion"
 
@@ -49,20 +51,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // SwiftUI-side `connect(appState:)` handshake.
         appState.applyLaunchAtLoginPreference()
 
-        // Catch all `.whispurOpenSettings` posters (OnboardingWindow,
-        // re-broadcast inside `postOpenSettings`, future call sites) and
-        // route through the single AppKit-owned opener. Previously the
-        // observer lived inside the SwiftUI `MenuBarExtra` label, but
-        // observers in that label cause the status item to be discarded
-        // on re-evaluation — which is what made the menu-bar icon vanish.
+        // OnboardingWindow (and any future caller) posts `.whispurOpenSettings`
+        // when it wants to drop the user into Settings on a particular tab.
+        // Route those through the AppKit-owned `showSettings` opener.
         NotificationCenter.default.addObserver(
             forName: .whispurOpenSettings,
             object: nil,
             queue: .main
         ) { [weak self] note in
             Task { @MainActor [weak self] in
-                let tab = (note.object as? String) ?? SettingsTab.setup.rawValue
-                self?.postOpenSettings(tab: tab)
+                let raw = (note.object as? String) ?? SettingsTab.setup.rawValue
+                let tab = SettingsTab(rawValue: raw) ?? .setup
+                self?.showSettings(tab: tab)
             }
         }
 
@@ -108,30 +108,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Settings as the canonical "main" window.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
         if !hasVisibleWindows {
-            postOpenSettings()
+            showSettings()
         }
         return true
     }
 
-    /// Handle our `comet://` URL scheme. SwiftUI's `.handlesExternalEvents`
-    /// on the Settings/About `Window` scenes is the primary handler — it
-    /// creates the SwiftUI scene if one doesn't exist yet. We only step
-    /// in here to focus an existing window if SwiftUI hasn't already done
-    /// so. **Must not call `postOpenSettings`** — that would re-issue the
-    /// URL open and loop. Activation alone is enough to surface whatever
-    /// window SwiftUI created from the same URL.
+    /// Handle our `comet://` URL scheme. Both Settings and About are now
+    /// AppKit-managed (`SettingsWindowController` / `AboutWindowController`),
+    /// so the URL is just a portable way to ask the app to surface one of
+    /// them — no SwiftUI scene magic involved.
     func application(_ application: NSApplication, open urls: [URL]) {
-        let host = urls.first(where: { $0.scheme == "comet" })?.host
-        guard let host else { return }
-        let identifierFragment = host == "settings" ? "settings" : "about"
-        NSApp.activate(ignoringOtherApps: true)
-        if let existing = NSApp.windows.first(where: {
-            ($0.identifier?.rawValue.contains(identifierFragment) ?? false) &&
-            !String(describing: type(of: $0)).contains("MenuBarExtra") &&
-            !String(describing: type(of: $0)).contains("StatusBar")
-        }) {
-            existing.makeKeyAndOrderFront(nil)
-            existing.orderFrontRegardless()
+        guard let host = urls.first(where: { $0.scheme == "comet" })?.host else { return }
+        switch host {
+        case "settings": showSettings()
+        case "about": showAbout()
+        default:
+            logger.info("Ignoring unknown comet:// URL host: \(host, privacy: .public)")
         }
     }
 
@@ -143,69 +135,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func openSettingsOnLaunchIfNeeded() {
         guard appState.onboardingCompleted else { return }
         guard onboardingWindowController == nil else { return }
-        postOpenSettings()
+        showSettings()
     }
 
-    /// Open the About window. Called from popover, AppDelegate hooks, or
-    /// the `comet://about` URL handler.
+    /// Open the About window. Lazy-instantiates an AppKit `NSWindowController`
+    /// the first time it's called and reuses it thereafter.
     func showAbout() {
-        if let existing = NSApp.windows.first(where: {
-            ($0.identifier?.rawValue.contains("about") ?? false) &&
-            !String(describing: type(of: $0)).contains("MenuBarExtra") &&
-            !String(describing: type(of: $0)).contains("StatusBar")
-        }) {
-            DockIconController.shared.register(existing)
-            NSApp.activate(ignoringOtherApps: true)
-            existing.makeKeyAndOrderFront(nil)
-            existing.orderFrontRegardless()
-            return
+        if aboutWC == nil {
+            aboutWC = AboutWindowController()
         }
-        if let url = URL(string: "comet://about") {
-            NSWorkspace.shared.open(url)
+        if let window = aboutWC?.window {
+            DockIconController.shared.register(window)
         }
         NSApp.activate(ignoringOtherApps: true)
+        aboutWC?.showWindow(nil)
+        aboutWC?.window?.makeKeyAndOrderFront(nil)
+        aboutWC?.window?.orderFrontRegardless()
     }
 
-    /// Open Settings to a specific tab. Public so the popover, Onboarding,
-    /// and other surfaces can route through a single AppKit-owned opener.
+    /// Open Settings, optionally focused on a specific tab. Lazy-instantiates
+    /// an AppKit `NSWindowController` the first time it's called and reuses
+    /// it thereafter — `isReleasedWhenClosed = false` keeps the NSWindow
+    /// alive so close-then-reopen just shows the same window again.
     func showSettings(tab: SettingsTab = .setup) {
-        postOpenSettings(tab: tab.rawValue)
-    }
+        // Persist the tab selection so the SettingsView's
+        // `@AppStorage("settings.selectedTab")` picks it up on render.
+        UserDefaults.standard.set(tab.rawValue, forKey: "settings.selectedTab")
 
-    private func postOpenSettings(tab: String = SettingsTab.setup.rawValue) {
-        // Persist the tab selection so the SettingsView picks it up on its
-        // next render. `selectedTab` is bound to `@AppStorage("settings.selectedTab")`
-        // inside the Settings view hierarchy.
-        UserDefaults.standard.set(tab, forKey: "settings.selectedTab")
-
-        // Bring an existing Settings NSWindow to the front if SwiftUI has
-        // already instantiated it. Cheaper than the URL-scheme round-trip
-        // and avoids any chance of the URL handler queuing.
-        if let existing = NSApp.windows.first(where: {
-            ($0.identifier?.rawValue.contains("settings") ?? false) &&
-            !String(describing: type(of: $0)).contains("MenuBarExtra") &&
-            !String(describing: type(of: $0)).contains("StatusBar")
-        }) {
-            DockIconController.shared.register(existing)
-            NSApp.activate(ignoringOtherApps: true)
-            existing.makeKeyAndOrderFront(nil)
-            existing.orderFrontRegardless()
-            // No re-broadcast — that would loop with our own observer.
-            // Tab selection is already persisted to UserDefaults above;
-            // the popover's `@AppStorage("settings.selectedTab")` and the
-            // SettingsView's binding will pick it up.
-            return
+        if settingsWC == nil {
+            settingsWC = SettingsWindowController(appState: appState)
         }
-
-        // No existing window — ask SwiftUI to instantiate the Settings scene
-        // by opening its registered URL. The Settings `Window` scene is
-        // wired to `comet://settings` via `.handlesExternalEvents`, so this
-        // works from AppKit without needing the SwiftUI `openWindow`
-        // environment action (which we can't get from AppDelegate).
-        if let url = URL(string: "comet://settings") {
-            NSWorkspace.shared.open(url)
+        if let window = settingsWC?.window {
+            DockIconController.shared.register(window)
         }
         NSApp.activate(ignoringOtherApps: true)
+        settingsWC?.showWindow(nil)
+        settingsWC?.window?.makeKeyAndOrderFront(nil)
+        settingsWC?.window?.orderFrontRegardless()
     }
 
     /// Returns true if App Translocation is in effect and a blocking alert

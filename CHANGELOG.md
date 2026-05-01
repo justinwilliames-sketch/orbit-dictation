@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.9] — 2026-05-01
+
+### Fixed
+
+* **Settings reopens reliably from the menu-bar popover.** After first close, SwiftUI's `Window(id: "settings")` scene went into a stale state — `openWindow` and `comet://settings` URL routing both stopped firing, and "Open Settings" from the popover did nothing. Replaced the SwiftUI Settings + About `Window` scenes with AppKit `NSWindowController`s (`SettingsWindowController`, `AboutWindowController`) — the same pattern Onboarding already uses. `isReleasedWhenClosed = false` keeps the NSWindow alive between opens.
+* **Cleanup prompt no longer abbreviates content.** The "Output length ≈ input length. Never expand" rule was silent on compression, so the LLM still tightened phrasing — dropping intensifiers ("really", "very"), modifiers ("the whole", "sort of"), and qualifiers it judged stylistically redundant. Rule now bidirectional: never expand AND never compress, with a ±10% word-count band (excluding fillers + list-connector framings) and an explicit "compression is the more common failure mode" anchor. New NEVER-list bullet enumerates which words may be dropped (only `um`/`uh`/`like`/`you know` plus list connectors when bulleting). Two existing examples that themselves demonstrated compression have been corrected to preserve all content words.
+
+### Internal
+
+* `WhispurApp` no longer declares `Window` scenes for Settings/About — all visible UI is now AppKit-managed (menu bar, Settings, About, Onboarding). One placeholder `Settings { }` scene satisfies SwiftUI's "App needs a Scene" requirement; it's never invoked at runtime for an `LSUIElement` app.
+* `comet://` URL scheme handler in `AppDelegate.application(_:open:)` now routes directly to `showSettings`/`showAbout` instead of attempting SwiftUI scene activation.
+
 ## [0.2.8] — 2026-05-01
 
 ### Fixed
