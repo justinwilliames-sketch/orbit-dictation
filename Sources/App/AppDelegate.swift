@@ -138,12 +138,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         showSettings()
     }
 
-    /// Open the About window. Lazy-instantiates an AppKit `NSWindowController`
-    /// the first time it's called and reuses it thereafter.
+    /// Open the About window. If a previous controller exists but its window
+    /// isn't visible (closed by the user), drop it and create a fresh one —
+    /// `NSHostingController`-backed windows on macOS Sequoia don't reliably
+    /// re-show after `orderOut`/close, so reuse-and-reshow is unreliable.
+    /// Recreating each time costs a small SwiftUI re-init and gives a
+    /// guaranteed-visible window.
     func showAbout() {
-        if aboutWC == nil {
-            aboutWC = AboutWindowController()
+        logger.info("showAbout: visible=\(self.aboutWC?.window?.isVisible ?? false ? "true" : "false", privacy: .public)")
+        if aboutWC?.window?.isVisible == true {
+            NSApp.activate(ignoringOtherApps: true)
+            aboutWC?.window?.makeKeyAndOrderFront(nil)
+            return
         }
+        aboutWC = AboutWindowController()
         if let window = aboutWC?.window {
             DockIconController.shared.register(window)
         }
@@ -153,18 +161,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         aboutWC?.window?.orderFrontRegardless()
     }
 
-    /// Open Settings, optionally focused on a specific tab. Lazy-instantiates
-    /// an AppKit `NSWindowController` the first time it's called and reuses
-    /// it thereafter — `isReleasedWhenClosed = false` keeps the NSWindow
-    /// alive so close-then-reopen just shows the same window again.
+    /// Open Settings, optionally focused on a specific tab. Same recreate-
+    /// when-not-visible pattern as `showAbout` — fixes the "Settings won't
+    /// reopen after first close" bug on macOS Sequoia, where re-showing a
+    /// hidden NSHostingController-backed window silently no-ops.
     func showSettings(tab: SettingsTab = .setup) {
+        logger.info("showSettings: tab=\(tab.rawValue, privacy: .public) visible=\(self.settingsWC?.window?.isVisible ?? false ? "true" : "false", privacy: .public)")
+
         // Persist the tab selection so the SettingsView's
         // `@AppStorage("settings.selectedTab")` picks it up on render.
         UserDefaults.standard.set(tab.rawValue, forKey: "settings.selectedTab")
 
-        if settingsWC == nil {
-            settingsWC = SettingsWindowController(appState: appState)
+        // Already-visible window: just bring it to the front. Cheap.
+        if settingsWC?.window?.isVisible == true {
+            NSApp.activate(ignoringOtherApps: true)
+            settingsWC?.window?.makeKeyAndOrderFront(nil)
+            return
         }
+
+        // First call OR the previous window was closed by the user. Either
+        // way, build a fresh controller. `isReleasedWhenClosed = false` on
+        // the old window means it stays alive until we drop our reference
+        // here; ARC frees both the old controller and its NSWindow.
+        settingsWC = SettingsWindowController(appState: appState)
         if let window = settingsWC?.window {
             DockIconController.shared.register(window)
         }

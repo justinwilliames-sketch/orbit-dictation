@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.11] — 2026-05-01
+
+### Fixed
+
+* **Settings reopens reliably after close (round 2).** Even with the AppKit `NSWindowController` conversion in v0.2.9, Sir reported Settings still wouldn't reopen after the first close. Root cause: `NSHostingController`-backed `NSWindow`s on macOS Sequoia don't reliably re-show after `orderOut`/close — `makeKeyAndOrderFront` on a hidden window silently no-ops. Fix: when `showSettings` finds the previous window non-visible, it drops the stale `SettingsWindowController` and instantiates a fresh one. Same pattern for About. Adds diagnostic logging so future regressions in this path can be confirmed via Console.app filter `subsystem == "team.yourorbit.OrbitDictation" AND category == "AppDelegate"`.
+
 ## [0.2.10] — 2026-05-01
 
 ### Changed
